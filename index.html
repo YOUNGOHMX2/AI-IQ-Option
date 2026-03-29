@@ -5,144 +5,163 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI วิเคราะห์กราฟหุ้น/คริปโต</title>
     <style>
+        :root {
+            --primary-color: #1a73e8;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #333;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f0f2f5;
+            font-family: 'Kanit', 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            color: #333;
+            color: var(--text-color);
         }
+
         .container {
-            background-color: #fff;
+            background-color: var(--card-bg);
             padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            width: 100%;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 90%;
             max-width: 500px;
             text-align: center;
         }
-        .section {
-            display: none; /* ซ่อนทุกหน้าไว้ก่อน */
-        }
-        .section.active {
-            display: block; /* แสดงเฉพาะหน้าที่มีคลาส active */
-        }
-        h2 { color: #1a73e8; }
+
+        .section { display: none; }
+        .section.active { display: block; animation: fadeIn 0.5s ease; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h2 { color: var(--primary-color); margin-bottom: 10px; }
+        
         .upload-area {
-            border: 2px dashed #ccc;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+            border: 2px dashed #cbd5e0;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 20px 0;
             cursor: pointer;
+            transition: 0.3s;
+            background: #fafafa;
         }
-        img {
+
+        .upload-area:hover { border-color: var(--primary-color); background: #f0f7ff; }
+
+        img#preview, img#resultImage {
             max-width: 100%;
-            border-radius: 8px;
-            margin-top: 15px;
+            border-radius: 12px;
+            margin: 15px 0;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
+
         button {
-            background-color: #1a73e8;
+            background-color: var(--primary-color);
             color: white;
             border: none;
-            padding: 12px 24px;
+            padding: 14px;
             font-size: 16px;
-            border-radius: 6px;
+            font-weight: bold;
+            border-radius: 10px;
             cursor: pointer;
             width: 100%;
             transition: 0.3s;
+            margin-top: 10px;
         }
-        button:hover { background-color: #1557b0; }
-        button:disabled { background-color: #ccc; cursor: not-allowed; }
-        
-        /* สไตล์สำหรับ Loader ตอนประมวลผล */
+
+        button:hover { background-color: #1557b0; transform: translateY(-2px); }
+        button:disabled { background-color: #ccc; cursor: not-allowed; transform: none; }
+
         .loader {
-            border: 6px solid #f3f3f3;
-            border-top: 6px solid #1a73e8;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary-color);
             border-radius: 50%;
             width: 50px;
             height: 50px;
             animation: spin 1s linear infinite;
             margin: 20px auto;
         }
+
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
+
+        /* ปรับแต่งกล่องผลลัพธ์ให้รองรับ HTML จาก Gemini */
         .result-box {
             text-align: left;
-            background: #e8f0fe;
-            padding: 15px;
-            border-radius: 8px;
+            background: #f1f3f4;
+            padding: 20px;
+            border-radius: 12px;
             margin: 20px 0;
-            line-height: 1.6;
+            border-left: 5px solid var(--primary-color);
+            font-size: 15px;
+            color: #202124;
         }
+
+        .result-box h1, .result-box h2, .result-box h3 { color: var(--primary-color); font-size: 1.2em; }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
 <body>
 
 <div class="container">
     
     <div id="step1" class="section active">
-        <h2>📈 AI วิเคราะห์กราฟแท่งเทียน</h2>
-        <p>อัปโหลดภาพแคปหน้าจอกราฟของคุณที่นี่</p>
+        <h2>📈 AI Chart Pro</h2>
+        <p>วิเคราะห์กราฟด้วยระบบ Gemini 1.5</p>
         <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-            คลิกเพื่อเลือกรูปภาพกราฟ
+            <p id="uploadText">📁 คลิกเพื่ออัปโหลดรูปกราฟ</p>
             <input type="file" id="fileInput" style="display:none" accept="image/*" onchange="previewImage(event)">
+            <img id="preview" style="display:none;" alt="Preview">
         </div>
-        <img id="preview" style="display:none;" alt="ภาพตัวอย่างกราฟ">
-        <br><br>
-        <button id="startBtn" onclick="startProcessing()" disabled>เริ่มประมวลผล</button>
+        <button id="startBtn" onclick="startProcessing()" disabled>วิเคราะห์เดี๋ยวนี้</button>
     </div>
 
     <div id="step2" class="section">
-        <h2>กำลังประมวลผล...</h2>
         <div class="loader"></div>
-        <p>AI กำลังสแกนรูปภาพและค้นหารูปแบบกราฟในฐานข้อมูล...</p>
+        <h2>AI กำลังอ่านกราฟ...</h2>
+        <p>ใช้เวลาประมาณ 5-10 วินาที</p>
     </div>
 
     <div id="step3" class="section">
-        <h2>ผลการวิเคราะห์กราฟ</h2>
-        <img id="resultImage" alt="กราฟที่วิเคราะห์">
-        <div class="result-box" id="analysisResult">
+        <h2>📊 ผลการวิเคราะห์</h2>
+        <img id="resultImage" alt="Analyzed Chart">
+        <div id="analysisResult" class="result-box">
+            </div>
+        <button onclick="resetApp()">วิเคราะห์รูปใหม่</button>
     </div>
-        <div id="analysisResult" style="line-height: 1.6;">
-    </div>
-        <button onclick="resetApp()">เริ่มวิเคราะห์ใหม่</button> </div>
 
 </div>
 
 <script>
-    // ข้อ 1: ดูตัวอย่างรูปเมื่ออัปโหลด
     function previewImage(event) {
         const file = event.target.files[0];
         if(file) {
             const reader = new FileReader();
             reader.onload = function(e) {
-                const previewText = document.getElementById('preview');
-                previewText.src = e.target.result;
-                previewText.style.display = 'block';
-                document.getElementById('startBtn').disabled = false; // เปิดปุ่มให้กดได้ (ข้อ 2)
+                const preview = document.getElementById('preview');
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                document.getElementById('uploadText').style.display = 'none';
+                document.getElementById('startBtn').disabled = false;
             }
             reader.readAsDataURL(file);
         }
     }
 
-    // ข้อ 3: กดเริ่มประมวลผล
     async function startProcessing() {
-        // ซ่อนหน้า 1 แสดงหน้า 2 (Loader)
         document.getElementById('step1').classList.remove('active');
         document.getElementById('step2').classList.add('active');
 
         const fileInput = document.getElementById('fileInput');
         const file = fileInput.files[0];
-        
-        // เตรียมข้อมูลรูปภาพสำหรับส่งไป Back-end
         const formData = new FormData();
         formData.append("image", file);
 
         try {
-            // ส่งรูปไปที่เซิร์ฟเวอร์ Python ของเรา
+            // ดึงลิงก์จาก Render มาใช้ตรงนี้
             const response = await fetch('https://backend-iq-option.onrender.com/analyze', {
                 method: 'POST',
                 body: formData
@@ -151,39 +170,36 @@
             const data = await response.json();
 
             if(response.ok) {
-                showResults(data.result); // เรียกฟังก์ชันแสดงผลพร้อมส่งข้อความจาก AI ไปให้
+                showResults(data.result);
             } else {
-                alert("เกิดข้อผิดพลาด: " + data.error);
+                alert("เกิดข้อผิดพลาดจากเซิร์ฟเวอร์: " + (data.error || "โปรดตรวจสอบ API Key"));
                 resetApp();
             }
         } catch (error) {
-            alert("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบว่ารันไฟล์ app.py แล้วหรือยัง");
+            alert("ไม่สามารถติดต่อเซิร์ฟเวอร์ได้: โปรดรอสักครู่เพื่อให้ Render ตื่นตัว (Cold Start)");
             resetApp();
         }
     }
 
-    // ข้อ 4: แสดงผลลัพธ์ (แก้ไขให้รับข้อความจาก AI มาแสดง)
     function showResults(aiAnalysisText) {
         const imgSrc = document.getElementById('preview').src;
         document.getElementById('resultImage').src = imgSrc;
-
-        // นำข้อความของจริงจาก AI มาแสดงในกล่อง
+        
+        // ใช้ innerHTML เพื่อรองรับการจัดรูปแบบ HTML จาก AI
         document.getElementById('analysisResult').innerHTML = aiAnalysisText;
 
-        // ซ่อนหน้า 2 แสดงหน้า 3
         document.getElementById('step2').classList.remove('active');
         document.getElementById('step3').classList.add('active');
     }
-    // ข้อ 5: กดเริ่มใช้ใหม่
+
     function resetApp() {
-        // ล้างค่าข้อมูลเก่าออกให้หมด (ข้อ 5.1)
         document.getElementById('fileInput').value = "";
-        document.getElementById('preview').src = "";
         document.getElementById('preview').style.display = 'none';
+        document.getElementById('uploadText').style.display = 'block';
         document.getElementById('startBtn').disabled = true;
 
-        // กลับไปหน้า 1
         document.getElementById('step3').classList.remove('active');
+        document.getElementById('step2').classList.remove('active'); // กันค้างหน้าโหลด
         document.getElementById('step1').classList.add('active');
     }
 </script>
