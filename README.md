@@ -1,1 +1,1 @@
-# my-chart-ai
+# AI-IQ-Option
